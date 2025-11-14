@@ -1,43 +1,49 @@
-import argparse
-from embedder import Embedder
-from indexer import Indexer
-from agent import Llama4Client, compose_prompt
-from rich import print
-from git_tools import GitTools
-import os
+# Git-Aware AI Coding Assistant
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('query')
-    parser.add_argument('--collection', default='default')
-    parser.add_argument('--topk', type=int, default=6)
-    parser.add_argument('--repo', default='.')
-    parser.add_argument('--allow-git', action='store_true', help='Allow the agent to run limited git commands (diff/blame).')
-    args = parser.parse_args()
+A local, privacy-first assistant that answers questions about your repository using retrieval-augmented generation (RAG).
+This repo includes:
+- Ingestion pipeline: traverse repository, chunk source files, create embeddings, store in Chroma.
+- LLM integration: an adapter for Llama 4 (HTTP/API). Replace endpoint/key with your provider details.
+- CLI that retrieves relevant code snippets and asks the LLM.
+- Safe `git` helpers to let the agent run restricted git commands (diff, blame, log).
+- A VS Code extension scaffold that calls the local CLI and streams results.
 
-    embedder = Embedder()
-    indexer = Indexer(collection_name=args.collection)
-    # retrieve
-    res = indexer.retrieve_by_text(args.query, embedder, n_results=args.topk)
-    docs = res['documents'][0]
-    metas = res['metadatas'][0]
-    dists = res['distances'][0]
-    results = list(zip(docs, metas, dists))
+> **Security**: Never run this on untrusted repositories with `--allow-git` enabled. See `SECURITY.md` for more.
 
-    prompt = compose_prompt(args.query, results)
-    client = Llama4Client()
+## Quick start (prototype)
 
-    print('\n--- Prompt sent to LLM (truncated) ---\n')
-    print(prompt[:2000])
-    print('\n--- Answer ---\n')
-    ans = client.call(prompt)
-    print(ans)
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-    # optional: run git helpers if requested
-    if args.allow_git:
-        gt = GitTools(args.repo)
-        print('\n--- Git diff (HEAD~1..HEAD) ---\n')
-        print(gt.git_diff('HEAD~1','HEAD'))
+# Ingest your repo (example)
+python ingest.py --repo /path/to/your/repo --collection myproj
 
-if __name__ == '__main__':
-    main()
+# Ask a question
+python cli.py "Where is the user auth logic?" --collection myproj --topk 6
+```
+
+## Llama 4 integration
+
+This project contains a `Llama4Client` in `agent.py`. Configure:
+- `LLAMA4_API_URL` — HTTP endpoint for your Llama 4 provider.
+- `LLAMA4_API_KEY` — API key in env.
+
+The client sends a prompt and expects a JSON response with `text`. Modify `agent.py` to match your provider's API if necessary.
+
+## Files of interest
+
+- `ingest.py` — traverses a repo, chunks files, creates embeddings, and upserts into Chroma.
+- `embedder.py` — wrapper for `sentence-transformers` embeddings (code-friendly model).
+- `indexer.py` — Chroma wrapper (local DuckDB+Parquet persist).
+- `git_tools.py` — safe git wrappers using GitPython + subprocess for blame/diff.
+- `agent.py` — prompt templates + Llama 4 client.
+- `cli.py` — simple CLI for user queries.
+- `vscode-extension/` — scaffold for a VS Code extension that runs the CLI.
+
+## Notes
+
+- This is a prototype intended for local use. It is not production hardened.
+- See `SECURITY.md` for recommended sandboxing and usage guidelines.
+
