@@ -18,10 +18,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Ingest your repo (example)
-python ingest.py --repo /path/to/your/repo --collection myproj
+python ingest.py --repo . --collection main --chunk-size 800 --overlap 100
+
+
 
 # Ask a question
-python cli.py "Where is the user auth logic?" --collection myproj --topk 6
+python cli.py "Show the main file where the agent is initialized" --collection git-aware-agent --topk 6
+
 ```
 
 ## Llama 4 integration
