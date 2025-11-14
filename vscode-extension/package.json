@@ -1,0 +1,31 @@
+{
+  "name": "git-aware-assistant",
+  "displayName": "Git-Aware AI Assistant (CLI Integration)",
+  "description": "Calls the local `gitbot` CLI and streams results into a panel.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "activationEvents": [
+    "onCommand:gitAwareAssistant.ask"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitAwareAssistant.ask",
+        "title": "Git-Aware Assistant: Ask"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "@types/node": "^14.0.0",
+    "vscode": "^1.1.37"
+  }
+}
